@@ -6,7 +6,7 @@
 Released under the GNU General Public License
 """
 
-import os, socket, struct
+import os, btsocket, struct
 
 def connect_phone2PC(config_file_path, interactive = True):
 	"""
@@ -22,11 +22,42 @@ def connect_phone2PC(config_file_path, interactive = True):
 		
 	default_services = config.get('default_services',[])
 	
+	if not interactive:
+		#try all previous services
+		for service in default_services:
+			sock = connect2service(service)
+			if sock:
+				return sock
+				
 	#interactive connect
 	service = discover_address()
 	
-	print service
-
+	if service:
+		config['default_services'].append(service)
+		#Make sure the configuration file exists
+		if not os.path.isdir(os.path.dirname(config_file_path)):
+			os.makedirs(os.path.dirname(config_file_path))
+		#store the configuration file
+		open(config_file_path,'wt').write(repr(config))
+		return connect2service(service)
+	else:
+		print 'No service choosen'
+		return None
+		
+def connect2service(service):
+	"""
+	service: (name,addr,port)
+	"""
+	print 'Connecting to %s on %s port %d ...' %service
+	try:
+		sock = btsocket.socket(btsocket.AF_BT, btsocket.SOCK_STREAM)
+		#sock.connect(service)
+		sock.connect(service[-2:])
+		return sock
+	except Exception, e:
+		print 'Failed to connect: %s' % e
+		return None
+	
 
 def discover_address():
 	"""
@@ -34,7 +65,7 @@ def discover_address():
 	"""
 	import appuifw
 	print "Discovering..."
-	address, services = socket.bt_discover()
+	address, services = btsocket.bt_discover()
 	print "Discovered: %s, %s" % (address, services)
 	if len(services) > 1: #if this host offers more than one service, let the user choose the right one
 		service_names = services.keys()
