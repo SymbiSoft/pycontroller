@@ -29,10 +29,9 @@ class ClientGui(object):
 		
 		self._canvas = appuifw.Canvas(redraw_callback = self.OnCanvasUpdate, event_callback = self.OnCanvasEvent)
 		self._dblbuf = graphics.Image.new(sysinfo.display_pixels())
-		self._background = graphics.Image.new(sysinfo.display_pixels())
-		
+		self._sprite = graphics.Image.open("c:\\DATA\\python\\IpodBotoes.png")
 		self.set_font()
-		self.drawing_queue = []
+		
 	
 		appuifw.app.body = self._canvas
 		
@@ -104,7 +103,22 @@ class ClientGui(object):
 		   		self._dblbuf.text((x + 1, int(y) + 1), line, fill = 0xffffff - self.font['fill'], font = font)
 			self._dblbuf.text((x , int(y)), line, fill = self.font['fill'], font = font)
 			y += line_height
-
+			
+	
+	def drawScreen(self,pressed):
+			self._dblbuf.clear()
+			x, y = sysinfo.display_pixels()
+			if not pressed:
+				self._dblbuf.blit(self._sprite,target=(int(x/3)+5, int(y/3)), source=(0,0,100,97))
+			else:
+				self._dblbuf.blit(self._sprite,target=(int(x/3)+5, int(y/3)), source=(0,97,100,194))
+			
+			self.OnCanvasUpdate(None)
+			#self._dblbuf.rectangle((0,0))
+			
+			#self._iCanvas.rectangle((0,0,240,320), outline = 0xFFFFFF, width=240)
+		
+		
 	def OnMenu(self, menu_cmd):
  		self.server.command(*menu_cmd.split(' '))
 	
@@ -141,6 +155,20 @@ class BluetoothClient(object):
 		self.command = e32.ao_callgate(self.send_command)
 		self.write_lock = None
 		self.sock = sock
+		self.pressed = False
+		self.event = False
+		self.timeI = 0
+	
+	def checkPressed(self):
+		if self.event:
+			self.timeI = 0
+			self.event = False
+			self.pressed = True
+		elif self.pressed:
+			self.timeI += 1
+			
+		if self.timeI == 10:
+			self.pressed = False
 	
 	def run(self,gui):
 		self.gui = gui
@@ -149,6 +177,8 @@ class BluetoothClient(object):
 		try:
 			while not self.finished:
 				#do something here
+				self.checkPressed()
+				self.gui.drawScreen(self.pressed)
 				e32.ao_yield()
 		except:
 			if not self.finished:  #dont show errors when closing down the connection
@@ -163,6 +193,7 @@ class BluetoothClient(object):
 				self.sock.send('bye')
 			elif cmd == 'cmd':
 				if (event['type'] == appuifw.EEventKeyDown) and event['scancode'] == key_codes.EScancodeSelect:
+					self.event = True
 					self.sock.send(str(key_codes.EScancodeSelect))
 					#print 'Select pressed!'
 		

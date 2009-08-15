@@ -14,8 +14,8 @@ objc.loadBundleFunctions(bndl, globals(), [('CGPostMouseEvent', 'v{CGPoint=ff}II
 while 1:
 	packet = conn.recv(1024)
 	if packet == "167":
-        CGPostMouseEvent((300, 300), 1, 1, 1)
-        CGPostMouseEvent((300, 300), 1, 1, 0)
+		CGPostMouseEvent((300, 300), 1, 1, 1)
+		CGPostMouseEvent((300, 300), 1, 1, 0)
 	elif packet == "bye":
 		break
 		
